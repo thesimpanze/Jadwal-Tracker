@@ -11,7 +11,6 @@ export interface Schedule {
   durasi: number
   eksklusif_request?: string | null
   description?: string | null
-  scheduled_at: string
-  is_completed: boolean
-  wa_notified: boolean
+  day_of_week: number // 1=Senin, 2=Selasa, ..., 7=Minggu
+  last_notified_at: string | null
 }

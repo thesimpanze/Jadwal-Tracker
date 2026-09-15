@@ -95,10 +95,18 @@ export default function AddScheduleForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className={labelClasses}>Tanggal</label>
+            <label className={labelClasses}>Hari</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input name="scheduled_at" type="date" required className={inputClasses} />
+              <select name="day_of_week" required className={`${inputClasses} appearance-none`}>
+                <option value="1">Senin</option>
+                <option value="2">Selasa</option>
+                <option value="3">Rabu</option>
+                <option value="4">Kamis</option>
+                <option value="5">Jumat</option>
+                <option value="6">Sabtu</option>
+                <option value="7">Minggu</option>
+              </select>
             </div>
           </div>
           <div>
