@@ -1,7 +1,8 @@
 'use client'
 
 import { Schedule } from '@/types'
-import { MapPin, Clock, BookOpen, User } from 'lucide-react'
+import Link from 'next/link'
+import { MapPin, Clock, BookOpen, User, Edit2 } from 'lucide-react'
 
 interface Props {
   schedule: Schedule
@@ -16,6 +17,13 @@ export default function ScheduleCard({ schedule }: Props) {
             {schedule.title}
           </h3>
         </div>
+        <Link 
+          href={`/edit/${schedule.id}`}
+          className="p-2 -mr-2 -mt-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-pink-500 transition-colors"
+          title="Edit Jadwal"
+        >
+          <Edit2 className="w-5 h-5" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-y-3 gap-x-4 text-sm text-gray-600 mb-4">
