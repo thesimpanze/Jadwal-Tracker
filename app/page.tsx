@@ -1,5 +1,5 @@
 import { supabase } from '@/utils/supabase'
-import { Schedule } from '@/types'
+import { Schedule, ScheduleFile } from '@/types'
 import ScheduleCard from '@/components/ScheduleCard'
 import Link from 'next/link'
 import { PlusCircle } from 'lucide-react'
@@ -19,6 +19,30 @@ export default async function Home() {
   }
 
   const typedSchedules = (schedules || []) as Schedule[]
+
+  const scheduleIds = typedSchedules.map((schedule) => schedule.id)
+  const { data: scheduleFiles } = scheduleIds.length
+    ? await supabase
+        .from('schedule_files')
+        .select('id, schedule_id, file_name, file_path, file_type, file_size, created_at')
+        .in('schedule_id', scheduleIds)
+        .order('created_at', { ascending: true })
+    : { data: [] }
+
+  const filesByScheduleId = ((scheduleFiles || []) as ScheduleFile[]).reduce(
+    (acc, file) => {
+      const { data } = supabase.storage.from('schedule-files').getPublicUrl(file.file_path)
+      const fileWithUrl = { ...file, public_url: data.publicUrl }
+
+      if (!acc[file.schedule_id]) {
+        acc[file.schedule_id] = []
+      }
+
+      acc[file.schedule_id].push(fileWithUrl)
+      return acc
+    },
+    {} as Record<string, ScheduleFile[]>
+  )
 
   // Group by day of week (1-7)
   const groupedSchedules = typedSchedules.reduce((acc, schedule) => {
@@ -65,6 +89,7 @@ export default async function Home() {
                       <ScheduleCard 
                         key={schedule.id} 
                         schedule={schedule} 
+                        files={filesByScheduleId[schedule.id] || []}
                       />
                     ))}
                   </div>
