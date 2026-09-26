@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { editSchedule, deleteSchedule } from '@/app/actions'
+import { uploadScheduleFiles } from '@/utils/uploadScheduleFiles'
 import { Calendar, Clock, MapPin, BookOpen, User, Users, AlignLeft, Info, Trash2 } from 'lucide-react'
 import { Schedule } from '@/types'
 
