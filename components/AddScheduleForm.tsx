@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { addSchedule } from '@/app/actions'
+import { uploadScheduleFiles } from '@/utils/uploadScheduleFiles'
 import { Calendar, Clock, MapPin, BookOpen, User, Users, AlignLeft, Info } from 'lucide-react'
 
 export default function AddScheduleForm() {
@@ -17,10 +18,23 @@ export default function AddScheduleForm() {
     setError(null)
     
     const formData = new FormData(e.currentTarget)
+    const fileInput = e.currentTarget.elements.namedItem('files') as HTMLInputElement | null
+    const selectedFiles = fileInput?.files ? Array.from(fileInput.files) : []
+
+    // Jangan kirim file ke Server Action. Upload file dilakukan lewat Route Handler
+    // agar file besar tidak terkena batas body Server Action.
+    formData.delete('files')
+
     const result = await addSchedule(formData)
     
-    if (result.success) {
-      router.push('/')
+    if (result.success && result.id) {
+      try {
+        await uploadScheduleFiles(result.id, selectedFiles)
+        router.push('/')
+      } catch (uploadError) {
+        setError(uploadError instanceof Error ? uploadError.message : 'Jadwal tersimpan, tetapi file gagal diupload')
+        setLoading(false)
+      }
     } else {
       setError(result.error || 'Terjadi kesalahan')
       setLoading(false)
@@ -212,8 +226,10 @@ export default function AddScheduleForm() {
           </div>
         </div>
         <input
+          name="files"
           type="file"
           multiple
+          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
           onChange={(e) => {
             if (e.target.files) {
               setFiles(Array.from(e.target.files));
