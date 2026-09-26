@@ -3,21 +3,67 @@ import { supabase } from '@/utils/supabase'
 
 export const dynamic = 'force-dynamic'
 
+const TIME_ZONE = 'Asia/Jakarta'
+
+function getJakartaNow() {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date())
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value])
+  )
+
+  const weekdayMap: Record<string, number> = {
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+    Sun: 7,
+  }
+
+  return {
+    dateKey: `${values.year}-${values.month}-${values.day}`,
+    dayOfWeek: weekdayMap[values.weekday],
+    minutesSinceMidnight:
+      Number(values.hour) * 60 +
+      Number(values.minute) +
+      Number(values.second) / 60,
+  }
+}
+
+function getJakartaDateKey(date: string | Date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(date))
+}
+
 export async function GET(request: Request) {
-  // 1. Basic security check (Optional: using a secret token in headers or query params)
+  // 1. Basic security check
   const authHeader = request.headers.get('authorization')
   if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // 2. Find schedules for today 
-  const now = new Date()
-  // JavaScript's getDay() returns 0 for Sunday, 1 for Monday.
-  // Our schema expects 1 for Senin, ..., 7 for Minggu.
-  let currentDayOfWeek = now.getDay()
-  if (currentDayOfWeek === 0) currentDayOfWeek = 7 // Adjust Sunday to 7
+  // 2. Always use WIB (Asia/Jakarta), regardless of the server timezone.
+  const jakartaNow = getJakartaNow()
+  const currentDayOfWeek = jakartaNow.dayOfWeek
 
-  // We want to fetch schedules that happen today
   const { data: schedules, error } = await supabase
     .from('schedules')
     .select('*')
@@ -29,7 +75,11 @@ export async function GET(request: Request) {
   }
 
   if (!schedules || schedules.length === 0) {
-    return NextResponse.json({ message: 'No schedules today' }, { status: 200 })
+    return NextResponse.json({
+      message: 'No schedules today',
+      timezone: TIME_ZONE,
+      currentTimeWIB: `${jakartaNow.dateKey} ${String(Math.floor(jakartaNow.minutesSinceMidnight / 60)).padStart(2, '0')}:${String(Math.floor(jakartaNow.minutesSinceMidnight % 60)).padStart(2, '0')}`,
+    }, { status: 200 })
   }
 
   const fonnteToken = process.env.FONNTE_API_TOKEN
@@ -42,34 +92,29 @@ export async function GET(request: Request) {
 
   let notifiedCount = 0
 
-  // Format today's date at midnight to compare with last_notified_at
-  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-  // 3. Send WhatsApp for schedules coming up in the next 2 hours
   for (const schedule of schedules) {
-    // Check if we already notified today
+    // Check if we already notified on the current WIB date.
     if (schedule.last_notified_at) {
-      const lastNotified = new Date(schedule.last_notified_at)
-      if (lastNotified >= todayMidnight) {
-        continue // Already notified today
+      const lastNotifiedDateWIB = getJakartaDateKey(schedule.last_notified_at)
+      if (lastNotifiedDateWIB === jakartaNow.dateKey) {
+        continue
       }
     }
 
-    // Check if it's coming up in the next 2 hours
     const [hours, minutes] = schedule.jam_mulai.split(':').map(Number)
-    const scheduleTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes)
-    const diffHours = (scheduleTime.getTime() - now.getTime()) / (1000 * 60 * 60)
+    const scheduleMinutes = hours * 60 + minutes
+    const diffMinutes = scheduleMinutes - jakartaNow.minutesSinceMidnight
 
-    // Notify if the schedule is in the future but less than 2.5 hours away
-    if (diffHours >= 0 && diffHours <= 2.5) {
-      const message = `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya ❤️*\n\n`
-        + `📚 *Mapel*: ${schedule.mapel}\n`
-        + `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\n`
-        + `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\n`
-        + `📍 *Alamat*: ${schedule.alamat}\n`
-        + (schedule.eksklusif_request ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\n` : '')
-        + (schedule.description ? `📝 *Catatan*: ${schedule.description}\n` : '')
-        + `\nSemangat ngajarnya sayang, I love you! 🥰`
+    // Notify if the schedule is in the future and within 2.5 hours.
+    if (diffMinutes >= 0 && diffMinutes <= 150) {
+      const message = `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya ❤️*\\n\\n`
+        + `📚 *Mapel*: ${schedule.mapel}\\n`
+        + `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\\n`
+        + `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\\n`
+        + `📍 *Alamat*: ${schedule.alamat}\\n`
+        + (schedule.eksklusif_request ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\\n` : '')
+        + (schedule.description ? `📝 *Catatan*: ${schedule.description}\\n` : '')
+        + `\\nSemangat ngajarnya sayang, I love you! 🥰`
 
       try {
         const response = await fetch('https://api.fonnte.com/send', {
@@ -80,19 +125,23 @@ export async function GET(request: Request) {
           },
           body: JSON.stringify({
             target: targetNumber,
-            message: message,
+            message,
             delay: '2',
           })
         })
 
         const result = await response.json()
+
         if (result.status) {
-          // 4. Mark as notified in Supabase for today
-          await supabase
+          const { error: updateError } = await supabase
             .from('schedules')
             .update({ last_notified_at: new Date().toISOString() })
             .eq('id', schedule.id)
-            
+
+          if (updateError) {
+            console.error('Error updating last_notified_at:', updateError)
+          }
+
           notifiedCount++
         } else {
           console.error('Fonnte API error:', result)
@@ -103,7 +152,10 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ 
-    message: `Processed ${schedules.length} schedules today. Successfully notified ${notifiedCount}.` 
+  return NextResponse.json({
+    message: `Processed ${schedules.length} schedules today. Successfully notified ${notifiedCount}.`,
+    timezone: TIME_ZONE,
+    currentDateWIB: jakartaNow.dateKey,
+    currentTimeWIB: `${String(Math.floor(jakartaNow.minutesSinceMidnight / 60)).padStart(2, '0')}:${String(Math.floor(jakartaNow.minutesSinceMidnight % 60)).padStart(2, '0')}`,
   }, { status: 200 })
 }
