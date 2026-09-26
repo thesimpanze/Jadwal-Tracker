@@ -18,7 +18,11 @@ export async function addSchedule(formData: FormData) {
     day_of_week: parseInt(formData.get('day_of_week') as string),
   }
 
-  const { error } = await supabase.from('schedules').insert([data])
+  const { data: schedule, error } = await supabase
+    .from('schedules')
+    .insert([data])
+    .select('id')
+    .single()
 
   if (error) {
     console.error('Error inserting schedule:', error)
@@ -26,7 +30,7 @@ export async function addSchedule(formData: FormData) {
   }
 
   revalidatePath('/')
-  return { success: true }
+  return { success: true, id: schedule.id }
 }
 
 export async function editSchedule(id: string, formData: FormData) {
@@ -52,7 +56,7 @@ export async function editSchedule(id: string, formData: FormData) {
   }
 
   revalidatePath('/')
-  return { success: true }
+  return { success: true, id }
 }
 
 export async function deleteSchedule(id: string) {
