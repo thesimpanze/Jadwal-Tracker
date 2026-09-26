@@ -10,7 +10,6 @@ export default function AddScheduleForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [files, setFiles] = useState<File[]>([])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -230,11 +229,6 @@ export default function AddScheduleForm() {
           type="file"
           multiple
           accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
-          onChange={(e) => {
-            if (e.target.files) {
-              setFiles(Array.from(e.target.files));
-            }
-          }}
         />
       </div>
 
