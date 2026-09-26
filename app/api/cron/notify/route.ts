@@ -62,14 +62,19 @@ export async function GET(request: Request) {
 
     // Notify if the schedule is in the future but less than 2.5 hours away
     if (diffHours >= 0 && diffHours <= 2.5) {
-      const message = `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya ❤️*\n\n`
-        + `📚 *Mapel*: ${schedule.mapel}\n`
-        + `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\n`
-        + `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\n`
-        + `📍 *Alamat*: ${schedule.alamat}\n`
-        + (schedule.eksklusif_request ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\n` : '')
-        + (schedule.description ? `📝 *Catatan*: ${schedule.description}\n` : '')
-        + `\nSemangat ngajarnya sayang, I love you! 🥰`
+      const message =
+        `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya 💖*\n\n` +
+        `📚 *Mapel*: ${schedule.mapel}\n` +
+        `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\n` +
+        `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\n` +
+        `📍 *Alamat*: ${schedule.alamat}\n` +
+        (schedule.eksklusif_request
+          ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\n`
+          : "") +
+        (schedule.description
+          ? `📝 *Catatan*: ${schedule.description}\n`
+          : "") +
+        `\nSemangat ngajarnya sayang, I love you! 🤍`;
 
       try {
         const response = await fetch('https://api.fonnte.com/send', {
