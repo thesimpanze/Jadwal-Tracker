@@ -60,6 +60,27 @@ export async function editSchedule(id: string, formData: FormData) {
 }
 
 export async function deleteSchedule(id: string) {
+  const { data: files, error: filesError } = await supabase
+    .from('schedule_files')
+    .select('file_path')
+    .eq('schedule_id', id)
+
+  if (filesError) {
+    console.error('Error fetching schedule files before delete:', filesError)
+    return { success: false, error: filesError.message }
+  }
+
+  if (files && files.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from('schedule-files')
+      .remove(files.map((file) => file.file_path))
+
+    if (storageError) {
+      console.error('Error deleting schedule files from storage:', storageError)
+      return { success: false, error: storageError.message }
+    }
+  }
+
   const { error } = await supabase
     .from('schedules')
     .delete()
