@@ -1,14 +1,15 @@
 'use client'
 
-import { Schedule } from '@/types'
+import { Schedule, ScheduleFile } from '@/types'
 import Link from 'next/link'
 import { MapPin, Clock, BookOpen, User, Edit2 } from 'lucide-react'
 
 interface Props {
   schedule: Schedule
+  files?: ScheduleFile[]
 }
 
-export default function ScheduleCard({ schedule }: Props) {
+export default function ScheduleCard({ schedule, files = [] }: Props) {
   return (
     <div className="relative p-5 rounded-2xl border backdrop-blur-md transition-all duration-300 hover:shadow-xl bg-white/80 border-pink-100 shadow-sm hover:-translate-y-1">
       <div className="flex justify-between items-start mb-4">
@@ -44,6 +45,26 @@ export default function ScheduleCard({ schedule }: Props) {
           <span className="truncate">{schedule.alamat}</span>
         </div>
       </div>
+
+      {files.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100/50">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Lampiran</p>
+          <div className="space-y-1">
+            {files.map((file) => (
+              <a
+                key={file.id}
+                href={file.public_url}
+                target="_blank"
+                rel="noreferrer"
+                className="block text-sm text-pink-600 hover:text-pink-700 hover:underline truncate"
+                title={file.file_name}
+              >
+                📎 {file.file_name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(schedule.description || schedule.eksklusif_request) && (
         <div className="mt-4 pt-4 border-t border-gray-100/50 space-y-2">
