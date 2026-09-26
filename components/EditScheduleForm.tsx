@@ -21,10 +21,21 @@ export default function EditScheduleForm({ schedule }: Props) {
     setError(null)
     
     const formData = new FormData(e.currentTarget)
+    const fileInput = e.currentTarget.elements.namedItem('files') as HTMLInputElement | null
+    const selectedFiles = fileInput?.files ? Array.from(fileInput.files) : []
+
+    formData.delete('files')
+
     const result = await editSchedule(schedule.id, formData)
     
     if (result.success) {
-      router.push('/')
+      try {
+        await uploadScheduleFiles(schedule.id, selectedFiles)
+        router.push('/')
+      } catch (uploadError) {
+        setError(uploadError instanceof Error ? uploadError.message : 'Jadwal terupdate, tetapi file gagal diupload')
+        setLoading(false)
+      }
     } else {
       setError(result.error || 'Terjadi kesalahan saat mengupdate')
       setLoading(false)
@@ -167,6 +178,18 @@ export default function EditScheduleForm({ schedule }: Props) {
             <AlignLeft className="absolute left-3 top-4 w-5 h-5 text-gray-400" />
             <textarea name="description" rows={3} defaultValue={schedule.description || ''} placeholder="Materi halaman 10-15" className="w-full pl-10 pr-4 py-3 bg-white border border-pink-100 rounded-xl focus:ring-2 focus:ring-pink-400 focus:border-transparent outline-none transition-all shadow-sm text-gray-700 resize-none"></textarea>
           </div>
+        </div>
+
+        <div>
+          <label className={labelClasses}>Tambah File</label>
+          <input
+            name="files"
+            type="file"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+            className="w-full rounded-xl border border-pink-100 bg-white px-4 py-3 text-sm text-gray-700 shadow-sm"
+          />
+          <p className="mt-1 text-xs text-gray-400">PDF, gambar, Word, atau Excel. Maksimal 10 MB per file.</p>
         </div>
       </div>
 
