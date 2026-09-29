@@ -108,43 +108,43 @@ export async function GET(request: Request) {
     // Notify if the schedule is in the future and within 2.5 hours.
     if (diffMinutes >= 0 && diffMinutes <= 150) {
       // Ambil file yang terhubung ke jadwal dan buat link publiknya.
-    const { data: scheduleFiles, error: filesError } = await supabase
+      const { data: scheduleFiles, error: filesError } = await supabase
       .from('schedule_files')
       .select('file_name, file_path')
       .eq('schedule_id', schedule.id)
       .order('created_at', { ascending: true })
-
-    if (filesError) {
+      
+      if (filesError) {
       console.error('Error fetching schedule files for notification:', filesError)
-    }
-
-    const fileLinks = (scheduleFiles ?? [])
+      }
+      
+      const fileLinks = (scheduleFiles ?? [])
       .map((file) => {
-        const { data } = supabase.storage
-          .from('schedule-files')
-          .getPublicUrl(file.file_path)
-
-        return `📎 *File*: ${file.file_name}\\n${data.publicUrl}`
+      const { data } = supabase.storage
+      .from('schedule-files')
+      .getPublicUrl(file.file_path)
+      
+      return `📎 *File*: ${file.file_name}\n${data.publicUrl}`
       })
-      .join('\\n\\n')
-
-    const message =
-      `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya 💖*\\n\\n` +
-      `📚 *Mapel*: ${schedule.mapel}\\n` +
-      `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\\n` +
-      `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\\n` +
-      `📍 *Alamat*: ${schedule.alamat}\\n` +
+      .join('\n\n')
+      
+      const message =
+      `*Hai Sayang! Jangan lupa jadwal ngajarmu hari ini ya 💖*\n\n` +
+      `📚 *Mapel*: ${schedule.mapel}\n` +
+      `👤 *Murid*: ${schedule.name_student} (${schedule.name_parent})\n` +
+      `⏰ *Waktu*: ${schedule.jam_mulai.substring(0, 5)} - ${schedule.jam_selesai.substring(0, 5)} (${schedule.durasi} jam)\n` +
+      `📍 *Alamat*: ${schedule.alamat}\n` +
       (schedule.eksklusif_request
-        ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\\n`
-        : "") +
+      ? `💡 *Spesial Request*: ${schedule.eksklusif_request}\n`
+      : "") +
       (schedule.description
-        ? `📝 *Catatan*: ${schedule.description}\\n`
-        : "") +
+      ? `📝 *Catatan*: ${schedule.description}\n`
+      : "") +
       (fileLinks
-        ? `\\n${fileLinks}\\n`
-        : "") +
-      `\\nSemangat ngajarnya sayang, I love you! 🤍`;
-
+      ? `\n${fileLinks}\n`
+      : "") +
+      `\nSemangat ngajarnya sayang, I love you! 🤍`;
+      
 
       try {
         const response = await fetch('https://api.fonnte.com/send', {
