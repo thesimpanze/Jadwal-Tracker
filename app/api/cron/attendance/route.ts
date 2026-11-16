@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 const TIME_ZONE = 'Asia/Jakarta'
 const GROUP_ID = '120363413451900653@g.us' // magang oke👍, verified through Fonnte.
-const MESSAGE = '⏰ Sudah pukul 16.40 WIB! Jangan lupa absen ya, teman-teman magang oke 👍'
+const MESSAGE = 'ABSEN WOK!'
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
   // Also guard manual calls and schedulers using the wrong timezone.
   if (!['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(time.weekday) ||
-      time.hour !== '16' || time.minute !== '40') {
+      time.hour !== '16' || time.minute !== '50') {
     return NextResponse.json({ message: 'Outside attendance reminder schedule', timezone: TIME_ZONE })
   }
 
