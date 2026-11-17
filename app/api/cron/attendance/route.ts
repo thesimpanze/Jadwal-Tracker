@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 const TIME_ZONE = 'Asia/Jakarta'
 const GROUP_ID = '120363413451900653@g.us' // magang oke👍, verified through Fonnte.
-const MESSAGE = 'ABSEN WOK!'
+const MESSAGE = 'ABSENNN'
 
 export async function GET() {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -18,7 +18,7 @@ export async function GET() {
 
   // Also guard manual calls and schedulers using the wrong timezone.
   if (!['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].includes(time.weekday) ||
-      time.hour !== '16' || time.minute !== '50') {
+      time.hour !== '16' || time.minute !== '30') {
     return NextResponse.json({ message: 'Outside attendance reminder schedule', timezone: TIME_ZONE })
   }
 

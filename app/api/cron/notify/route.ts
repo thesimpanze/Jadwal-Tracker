@@ -56,9 +56,6 @@ function getJakartaDateKey(date: string | Date) {
 export async function GET(request: Request) {
   // 1. Basic security check
   const authHeader = request.headers.get('authorization')
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
 
   // 2. Always use WIB (Asia/Jakarta), regardless of the server timezone.
   const jakartaNow = getJakartaNow()
