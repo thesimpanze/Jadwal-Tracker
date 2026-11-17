@@ -6,15 +6,7 @@ const TIME_ZONE = 'Asia/Jakarta'
 const GROUP_ID = '120363413451900653@g.us' // magang oke👍, verified through Fonnte.
 const MESSAGE = 'ABSEN WOK!'
 
-export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
-  if (!secret) {
-    return NextResponse.json({ error: 'Missing CRON_SECRET' }, { status: 503 })
-  }
-  if (request.headers.get('authorization') !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export async function GET() {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: TIME_ZONE,
     weekday: 'short',

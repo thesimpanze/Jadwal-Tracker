@@ -10,8 +10,8 @@ const { outputText } = ts.transpileModule(source, {
 })
 
 function loadHandler({
-  now = '2026-11-16T09:40:00Z',
-  env = { CRON_SECRET: 'test-secret', FONNTE_API_TOKEN: 'test-token', TARGET_WA_NUMBER: 'personal-number' },
+  now = '2026-11-16T09:50:00Z',
+  env = { FONNTE_API_TOKEN: 'test-token', TARGET_WA_NUMBER: 'personal-number' },
   fetchImpl = async () => Response.json({ status: true }),
 } = {}) {
   const calls = []
@@ -39,15 +39,13 @@ function loadHandler({
   return { GET: context.exports.GET, calls }
 }
 
-function request(secret = 'test-secret') {
-  return new Request('http://localhost/api/cron/attendance', {
-    headers: { Authorization: `Bearer ${secret}` },
-  })
+function request() {
+  return new Request('http://localhost/api/cron/attendance')
 }
 
-test('all weekdays at 16:40 WIB send to the verified group, regardless of personal target', async () => {
+test('all weekdays at 16:50 WIB send without authorization to the verified group', async () => {
   for (const day of [16, 17, 18, 19, 20]) {
-    const { GET, calls } = loadHandler({ now: `2026-11-${day}T09:40:45Z` })
+    const { GET, calls } = loadHandler({ now: `2026-11-${day}T09:50:45Z` })
     assert.equal((await GET(request())).status, 200)
     assert.equal(calls.length, 1)
     const [url, options] = calls[0]
@@ -55,18 +53,17 @@ test('all weekdays at 16:40 WIB send to the verified group, regardless of person
     assert.equal(options.headers.Authorization, 'test-token')
     const body = JSON.parse(options.body)
     assert.equal(body.target, '120363413451900653@g.us')
-    assert.match(body.message, /16\.40 WIB/)
-    assert.match(body.message, /absen/)
+    assert.equal(body.message, 'ABSEN WOK!')
   }
 })
 
 test('weekends and times outside the scheduled WIB minute never send', async () => {
   for (const now of [
-    '2026-11-21T09:40:00Z',
-    '2026-11-22T09:40:00Z',
-    '2026-11-16T09:39:59Z',
-    '2026-11-16T09:41:00Z',
-    '2026-11-16T16:40:00Z',
+    '2026-11-21T09:50:00Z',
+    '2026-11-22T09:50:00Z',
+    '2026-11-16T09:49:59Z',
+    '2026-11-16T09:51:00Z',
+    '2026-11-16T16:50:00Z',
   ]) {
     const { GET, calls } = loadHandler({ now })
     assert.equal((await GET(request())).status, 200)
@@ -74,13 +71,12 @@ test('weekends and times outside the scheduled WIB minute never send', async () 
   }
 })
 
-test('requires a configured cron secret and valid authorization', async () => {
-  const unauthorized = loadHandler()
-  assert.equal((await unauthorized.GET(request('wrong'))).status, 401)
-  assert.equal(unauthorized.calls.length, 0)
-  const unconfigured = loadHandler({ env: { FONNTE_API_TOKEN: 'test-token' } })
-  assert.equal((await unconfigured.GET(request())).status, 503)
-  assert.equal(unconfigured.calls.length, 0)
+test('existing CRON_SECRET does not require authorization for attendance', async () => {
+  const { GET, calls } = loadHandler({
+    env: { CRON_SECRET: 'existing-secret', FONNTE_API_TOKEN: 'test-token' },
+  })
+  assert.equal((await GET(request())).status, 200)
+  assert.equal(calls.length, 1)
 })
 
 test('missing Fonnte token never sends', async () => {
